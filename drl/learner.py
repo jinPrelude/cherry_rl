@@ -10,7 +10,7 @@ import seed_rl_pb2_grpc
 
 import numpy as np
 class ReplayBuffer:
-    """ Referenced by minimalRL 
+    """ Referenced to minimalRL.
     """
     def __init__(self):
         self.data = []
@@ -48,21 +48,12 @@ class WaitingBatch:
     def __len__(self):
         return len(self.dict)
 
-    def store_by_id(self, actor_id, key: str, value: object):
-        assert key in ["obs", "reward", "action", "next_obs", "done"]
-        if actor_id not in self.dict.keys() : self.dict[actor_id] = {}
-        if key not in self.dict[actor_id].keys():
-            self.dict[actor_id][key] = value
+    def store(self, actor_id, obs):
+        if actor_id not in self.dict.keys():
+            self.dict[actor_id] = obs
         else:
             raise AssertionError(f"Try to overwrite existing key: self.dict[{actor_id}][{key}]")
 
-    def get_by_id(self, actor_id, key):
-        # print(f"{actor_id} : {self.dict[actor_id]}")
-        return self.dict[actor_id][key]
-    
-    def check_key_exist_by_id(self, actor_id, key):
-        return True if key in self.dict[actor_id].keys() else False
-    
     def delete_by_id(self, actor_id):
         del self.dict[actor_id]
 
@@ -72,8 +63,9 @@ class WaitingBatch:
     def get_all_ids_obs(self):
         id_lst = list(self.dict.keys())
         obs_lst = []
-        for actor_id in id_lst: obs_lst.append(self.dict[actor_id]["obs"])
+        for actor_id in id_lst: obs_lst.append(self.dict[actor_id])
         return deepcopy(id_lst), deepcopy(obs_lst)
+
 class ProcessedBatch:
     def __init__(self):
         self.lst = {}
@@ -82,11 +74,7 @@ class ProcessedBatch:
         self.lst[actor_id] = (obs, action)
     
     def get_by_id(self, actor_id):
-        result = self.lst[actor_id]
-        return result
-    
-    def keys(self):
-        return self.lst.keys()
+        return self.lst[actor_id]
     
     def is_id_exist(self, actor_id):
         return True if actor_id in self.lst.keys() else False
@@ -98,15 +86,9 @@ class SeedRLServicer(seed_rl_pb2_grpc.SeedRLServicer):
 
     def __init__(self, waiting_batch_size = 4):
         self.Agent = random.randint
-        self.actor_num = 2
         self.waiting_batch = WaitingBatch(waiting_batch_size = waiting_batch_size)
         self.processed_batch = ProcessedBatch()
-        self.replay_buffer= ReplayBuffer()
-        self.actors_ready = np.zeros(self.actor_num)
-
-    
-    def _check_actors_ready(self):
-        return np.all(self.actors_ready == 1)
+        self.replay_buffer = ReplayBuffer()
 
     def _process(self):
         id_lst, obs_lst = self.waiting_batch.get_all_ids_obs()
@@ -114,9 +96,6 @@ class SeedRLServicer(seed_rl_pb2_grpc.SeedRLServicer):
             action = self.Agent(0, 1)
             self.processed_batch.store(actor_id, obs, action)
             self.waiting_batch.delete_by_id(actor_id)
-
-    def _is_processed(self, actor_id):
-        return True if actor_id in self.processed_batch.keys() else False
 
     def DiscreteGymStep(self, request, context):
         done = False
@@ -137,13 +116,12 @@ class SeedRLServicer(seed_rl_pb2_grpc.SeedRLServicer):
         if done:
             return seed_rl_pb2.DiscreteGymReply(action = -1)
         else:
-            self.waiting_batch.store_by_id(request.actor_id, "obs", obs)
+            self.waiting_batch.store(request.actor_id, obs)
 
-            # TODO : actor를 여려개 만드니 문제가 생긴다. 여기서 batch_is_full 이랑 self._process()에 접근하면서 충돌하는듯.
             while not self.processed_batch.is_id_exist(request.actor_id):
                 if self.waiting_batch.is_full():
                     self._process()
-                time.sleep(0.001)
+                time.sleep(0.0000001)
             _, action = self.processed_batch.get_by_id(request.actor_id)
             return seed_rl_pb2.DiscreteGymReply(action = self.Agent(0, 1)+1)
 
