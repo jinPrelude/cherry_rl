@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+service SeedRL {
+    rpc DiscreteGymStep (CallRequest) returns (DiscreteGymReply);
+}
+
+message CallRequest {
+    int32 actor_id = 1;
+    string obs = 2;
+    float reward = 3;
+    string done = 4;
+    string request_type = 5;
+}
+
+message DiscreteGymReply {
+    int32 action = 1;
+}
