@@ -2,8 +2,10 @@ from concurrent import futures
 import logging
 import math
 import time
+import threading
 import random
 from copy import deepcopy
+
 import grpc
 import seed_rl_pb2
 import seed_rl_pb2_grpc
@@ -81,7 +83,7 @@ class ProcessedBatch:
     
     def delete_by_id(self, actor_id):
         del self.lst[actor_id]
-    
+
 class SeedRLServicer(seed_rl_pb2_grpc.SeedRLServicer):
 
     def __init__(self, waiting_batch_size = 4):
@@ -90,12 +92,20 @@ class SeedRLServicer(seed_rl_pb2_grpc.SeedRLServicer):
         self.processed_batch = ProcessedBatch()
         self.replay_buffer = ReplayBuffer()
 
-    def _process(self):
-        id_lst, obs_lst = self.waiting_batch.get_all_ids_obs()
-        for actor_id, obs in zip(id_lst, obs_lst):
-            action = self.Agent(0, 1)
-            self.processed_batch.store(actor_id, obs, action)
-            self.waiting_batch.delete_by_id(actor_id)
+        batching_thread = threading.Thread(target=self.batching_thread)
+        batching_thread.daemon = True
+        batching_thread.start()
+
+    def batching_thread(self):
+        while True:
+            if self.waiting_batch.is_full():
+                id_lst, obs_lst = self.waiting_batch.get_all_ids_obs()
+                for actor_id, obs in zip(id_lst, obs_lst):
+                    action = self.Agent(0, 1)
+                    self.processed_batch.store(actor_id, obs, action)
+                    self.waiting_batch.delete_by_id(actor_id)
+            else:
+                time.sleep(0.0000000001)
 
     def DiscreteGymStep(self, request, context):
         done = False
@@ -117,11 +127,8 @@ class SeedRLServicer(seed_rl_pb2_grpc.SeedRLServicer):
             return seed_rl_pb2.DiscreteGymReply(action = -1)
         else:
             self.waiting_batch.store(request.actor_id, obs)
-
             while not self.processed_batch.is_id_exist(request.actor_id):
-                if self.waiting_batch.is_full():
-                    self._process()
-                time.sleep(0.0000001)
+                time.sleep(0.0000000001)
             _, action = self.processed_batch.get_by_id(request.actor_id)
             return seed_rl_pb2.DiscreteGymReply(action = self.Agent(0, 1)+1)
 
