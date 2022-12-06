@@ -1,3 +1,7 @@
+from batch_utils import WaitingBatch, ProcessedBatch, ReplayBuffer
+from agent.abstracts import Agent
+from agent.dummy import DummyDiscreteAgent
+
 from concurrent import futures
 import time
 import threading
@@ -10,12 +14,10 @@ import cherry_rl_pb2_grpc
 
 import numpy as np
 
-from batch_utils import WaitingBatch, ProcessedBatch, ReplayBuffer
-
 class CherryRLServicer(cherry_rl_pb2_grpc.CherryRLServicer):
 
-    def __init__(self, waiting_batch_size = 4):
-        self.Agent = random.randint
+    def __init__(self, agent: Agent, waiting_batch_size: int = 3):
+        self.Agent = agent
         self.waiting_batch = WaitingBatch(waiting_batch_size = waiting_batch_size)
         self.processed_batch = ProcessedBatch()
         self.replay_buffer = ReplayBuffer()
@@ -29,7 +31,7 @@ class CherryRLServicer(cherry_rl_pb2_grpc.CherryRLServicer):
             if self.waiting_batch.is_full():
                 id_lst, obs_lst = self.waiting_batch.get_all_ids_obs()
                 for actor_id, obs in zip(id_lst, obs_lst):
-                    action = self.Agent(0, 1)
+                    action = self.Agent.forward(obs)
                     self.processed_batch.store(actor_id, obs, action)
                     self.waiting_batch.delete_by_id(actor_id)
             else:
@@ -58,15 +60,16 @@ class CherryRLServicer(cherry_rl_pb2_grpc.CherryRLServicer):
             while not self.processed_batch.is_id_exist(request.actor_id):
                 time.sleep(0.0000000001)
             _, action = self.processed_batch.get_by_id(request.actor_id)
-            return cherry_rl_pb2.DiscreteGymReply(action = self.Agent(0, 1)+1)
+            return cherry_rl_pb2.DiscreteGymReply(action = self.Agent.forward(obs)+1)
 
-def run_learner():
+def run_learner(agent: Agent):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     cherry_rl_pb2_grpc.add_CherryRLServicer_to_server(
-        CherryRLServicer(), server)
+        CherryRLServicer(agent=agent), server)
     server.add_insecure_port('[::]:50051')
     server.start()
     server.wait_for_termination()
 
 if __name__ == '__main__':
-    run_learner()
+    agent = DummyDiscreteAgent(0, 1)
+    run_learner(agent)
