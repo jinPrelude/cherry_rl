@@ -4,8 +4,8 @@ import random
 import argparse
 
 import grpc
-import seed_rl_pb2
-import seed_rl_pb2_grpc
+import cherry_rl_pb2
+import cherry_rl_pb2_grpc
 
 import gym
 import numpy as np
@@ -14,7 +14,7 @@ def reset_env(stub, env, actor_id):
     obs, _ = env.reset()
     print(f"id: {actor_id}\tobs: {obs}")
     obs = str(obs)
-    response = stub.Reset(seed_rl_pb2.ResetRequest(actor_id=actor_id, obs=obs))
+    response = stub.Reset(cherry_rl_pb2.ResetRequest(actor_id=actor_id, obs=obs))
     print(f"response: {response}")
     action = response.action - 1
     return action
@@ -28,7 +28,7 @@ def actor_loop(stub, env, actor_id):
         request_type, reward = "reset", 0
         while True:
             print(f"request type: {request_type}")
-            response = stub.DiscreteGymStep(seed_rl_pb2.CallRequest(actor_id=actor_id, obs=obs, reward=reward, done=str(done), request_type=request_type))
+            response = stub.DiscreteGymStep(cherry_rl_pb2.CallRequest(actor_id=actor_id, obs=obs, reward=reward, done=str(done), request_type=request_type))
             if done:
                 break
             request_type = "step"
@@ -45,7 +45,7 @@ def run_actor(actor_id: int):
     assert actor_id >= 1, "actor_id should started from 1."
 
     channel = grpc.insecure_channel('localhost:50051')
-    stub = seed_rl_pb2_grpc.SeedRLStub(channel)
+    stub = cherry_rl_pb2_grpc.CherryRLStub(channel)
 
     env = gym.make("CartPole-v1")
 

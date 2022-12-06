@@ -5,14 +5,14 @@ import random
 from copy import deepcopy
 
 import grpc
-import seed_rl_pb2
-import seed_rl_pb2_grpc
+import cherry_rl_pb2
+import cherry_rl_pb2_grpc
 
 import numpy as np
 
 from batch_utils import WaitingBatch, ProcessedBatch, ReplayBuffer
 
-class SeedRLServicer(seed_rl_pb2_grpc.SeedRLServicer):
+class CherryRLServicer(cherry_rl_pb2_grpc.CherryRLServicer):
 
     def __init__(self, waiting_batch_size = 4):
         self.Agent = random.randint
@@ -52,18 +52,18 @@ class SeedRLServicer(seed_rl_pb2_grpc.SeedRLServicer):
             obs = next_obs
         # store obs and actor_id in the waiting_batch
         if done:
-            return seed_rl_pb2.DiscreteGymReply(action = -1)
+            return cherry_rl_pb2.DiscreteGymReply(action = -1)
         else:
             self.waiting_batch.store(request.actor_id, obs)
             while not self.processed_batch.is_id_exist(request.actor_id):
                 time.sleep(0.0000000001)
             _, action = self.processed_batch.get_by_id(request.actor_id)
-            return seed_rl_pb2.DiscreteGymReply(action = self.Agent(0, 1)+1)
+            return cherry_rl_pb2.DiscreteGymReply(action = self.Agent(0, 1)+1)
 
 def run_learner():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    seed_rl_pb2_grpc.add_SeedRLServicer_to_server(
-        SeedRLServicer(), server)
+    cherry_rl_pb2_grpc.add_CherryRLServicer_to_server(
+        CherryRLServicer(), server)
     server.add_insecure_port('[::]:50051')
     server.start()
     server.wait_for_termination()

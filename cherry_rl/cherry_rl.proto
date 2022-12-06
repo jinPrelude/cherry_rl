@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-service SeedRL {
+service CherryRL {
     rpc DiscreteGymStep (CallRequest) returns (DiscreteGymReply);
 }
 
