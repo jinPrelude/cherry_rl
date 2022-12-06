@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-import logging
 import random
 import argparse
 
@@ -38,14 +37,12 @@ def actor_loop(stub, env, actor_id):
             obs = str(obs)
 
 
-def run():
+def run_actor(actor_id: int):
     # NOTE(gRPC Python Team): .close() is possible on a channel and should be
     # used in circumstances in which the with statement does not fit the needs
     # of the code.
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--id', type=int)
-    args = parser.parse_args()
+    
+    assert actor_id >= 1, "actor_id should started from 1."
 
     channel = grpc.insecure_channel('localhost:50051')
     stub = seed_rl_pb2_grpc.SeedRLStub(channel)
@@ -53,10 +50,12 @@ def run():
     env = gym.make("CartPole-v1")
 
     # action = reset_env(stub, env, args.id)
-    actor_loop(stub, env, args.id)
+    actor_loop(stub, env, actor_id)
     print("passed!")
 
 
 if __name__ == '__main__':
-    logging.basicConfig()
-    run()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--id', type=int)
+    args = parser.parse_args()
+    run_actor(args.id)

@@ -1,6 +1,4 @@
 from concurrent import futures
-import logging
-import math
 import time
 import threading
 import random
@@ -62,7 +60,7 @@ class SeedRLServicer(seed_rl_pb2_grpc.SeedRLServicer):
             _, action = self.processed_batch.get_by_id(request.actor_id)
             return seed_rl_pb2.DiscreteGymReply(action = self.Agent(0, 1)+1)
 
-def serve():
+def run_learner():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     seed_rl_pb2_grpc.add_SeedRLServicer_to_server(
         SeedRLServicer(), server)
@@ -70,7 +68,5 @@ def serve():
     server.start()
     server.wait_for_termination()
 
-
 if __name__ == '__main__':
-    logging.basicConfig()
-    serve()
+    run_learner()
