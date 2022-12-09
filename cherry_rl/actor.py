@@ -10,17 +10,8 @@ import cherry_rl_pb2_grpc
 import gym
 import numpy as np
 
-def reset_env(stub, env, actor_id):
-    obs, _ = env.reset()
-    print(f"id: {actor_id}\tobs: {obs}")
-    obs = str(obs)
-    response = stub.Reset(cherry_rl_pb2.ResetRequest(actor_id=actor_id, obs=obs))
-    print(f"response: {response}")
-    action = response.action - 1
-    return action
-
 def actor_loop(stub, env, actor_id):
-    print("actor loop!!")
+    print(f"actor_{actor_id} started.")
     while True:
         obs, _ = env.reset()
         obs = str(obs)
@@ -36,7 +27,6 @@ def actor_loop(stub, env, actor_id):
 
 
 def run_actor(actor_id: int):
-
     assert actor_id >= 1, "actor_id should started from 1."
 
     channel = grpc.insecure_channel('localhost:50051')
@@ -45,7 +35,6 @@ def run_actor(actor_id: int):
     env = gym.make("CartPole-v1")
 
     actor_loop(stub, env, actor_id)
-    print("passed!")
 
 
 if __name__ == '__main__':
