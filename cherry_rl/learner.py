@@ -63,7 +63,7 @@ class CherryRLServicer(cherry_rl_pb2_grpc.CherryRLServicer):
             return cherry_rl_pb2.DiscreteGymReply(action = self.Agent.forward(obs)+1)
 
 def run_learner(agent: Agent):
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=65))
     cherry_rl_pb2_grpc.add_CherryRLServicer_to_server(
         CherryRLServicer(agent=agent), server)
     server.add_insecure_port('[::]:50051')

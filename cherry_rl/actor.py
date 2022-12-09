@@ -24,24 +24,19 @@ def actor_loop(stub, env, actor_id):
     while True:
         obs, _ = env.reset()
         obs = str(obs)
-        done = False
-        request_type, reward = "reset", 0
+        done, reward = False, 0
+        response = stub.DiscreteGymStep(cherry_rl_pb2.CallRequest(actor_id=actor_id, obs=obs, reward=reward, done=str(done), request_type="reset"), wait_for_ready=True)
         while True:
-            print(f"request type: {request_type}")
-            response = stub.DiscreteGymStep(cherry_rl_pb2.CallRequest(actor_id=actor_id, obs=obs, reward=reward, done=str(done), request_type=request_type))
-            if done:
-                break
-            request_type = "step"
             action = response.action - 1
             obs, reward, done, _, _ = env.step(action)
             obs = str(obs)
+            response = stub.DiscreteGymStep(cherry_rl_pb2.CallRequest(actor_id=actor_id, obs=obs, reward=reward, done=str(done), request_type="step"))
+            if done:
+                break
 
 
 def run_actor(actor_id: int):
-    # NOTE(gRPC Python Team): .close() is possible on a channel and should be
-    # used in circumstances in which the with statement does not fit the needs
-    # of the code.
-    
+
     assert actor_id >= 1, "actor_id should started from 1."
 
     channel = grpc.insecure_channel('localhost:50051')
@@ -49,7 +44,6 @@ def run_actor(actor_id: int):
 
     env = gym.make("CartPole-v1")
 
-    # action = reset_env(stub, env, args.id)
     actor_loop(stub, env, actor_id)
     print("passed!")
 
