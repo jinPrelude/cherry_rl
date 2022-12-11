@@ -23,7 +23,6 @@ class CherryRLServicer(cherry_rl_pb2_grpc.CherryRLServicer):
         self.waiting_batch = WaitingBatch(waiting_batch_size = waiting_batch_size)
         self.processed_batch = ProcessedBatch()
         self.replay_buffer = ReplayBuffer()
-        self.waiting_using = False
         batching_thread = threading.Thread(target=self.batching_thread)
         batching_thread.daemon = True
         batching_thread.start()
@@ -31,12 +30,10 @@ class CherryRLServicer(cherry_rl_pb2_grpc.CherryRLServicer):
     def batching_thread(self):
         while True:
             if self.waiting_batch.is_full():
-                self.waiting_using = True
                 id_lst, obs_lst = self.waiting_batch.get_all_ids_obs()
                 for actor_id, obs in zip(id_lst, obs_lst):
                     action = self.Agent.forward(obs)
                     self.waiting_batch.delete_by_id(actor_id)
-                    self.waiting_using = False
                     self.processed_batch.store(actor_id, obs, action)
 
             else:
@@ -63,7 +60,6 @@ class CherryRLServicer(cherry_rl_pb2_grpc.CherryRLServicer):
         if done:
             return cherry_rl_pb2.DiscreteGymReply(action = -1)
         else:           
-            while self.waiting_using: time.sleep(0.000000001)
             self.waiting_batch.store(request.actor_id, obs)
             while not self.processed_batch.is_id_exist(request.actor_id): time.sleep(0.0000000001)
             _, action = self.processed_batch.get_by_id(request.actor_id)
