@@ -7,11 +7,11 @@ service CherryRL {
 message CallRequest {
     int32 actor_id = 1;
     string obs = 2;
-    float reward = 3;
+    string reward = 3;
     string done = 4;
     string request_type = 5;
 }
 
 message DiscreteGymReply {
-    int32 action = 1;
+    string action = 1;
 }

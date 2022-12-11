@@ -1,4 +1,4 @@
-from execute_function import train
+from execute_functions import train
 from agent.dummy import DummyDiscreteAgent
 
 

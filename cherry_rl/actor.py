@@ -1,4 +1,4 @@
-from __future__ import print_function
+from str_arr_converters import vector_gym_arr2str
 
 import random
 import argparse
@@ -14,14 +14,14 @@ def actor_loop(stub, env, actor_id):
     print(f"actor_{actor_id} started.")
     while True:
         obs, _ = env.reset()
-        obs = str(obs)
-        done, reward = False, 0
-        response = stub.DiscreteGymStep(cherry_rl_pb2.CallRequest(actor_id=actor_id, obs=obs, reward=reward, done=str(done), request_type="reset"), wait_for_ready=True)
+        obs = vector_gym_arr2str(obs)
+        done, reward = 'False', '0'
+        response = stub.DiscreteGymStep(cherry_rl_pb2.CallRequest(actor_id=actor_id, obs=obs, reward=reward, done=done, request_type="reset"), wait_for_ready=True)
         while True:
-            action = response.action - 1
+            action = int(response.action)
             obs, reward, done, _, _ = env.step(action)
-            obs = str(obs)
-            response = stub.DiscreteGymStep(cherry_rl_pb2.CallRequest(actor_id=actor_id, obs=obs, reward=reward, done=str(done), request_type="step"))
+            obs, reward, done = vector_gym_arr2str(obs), str(reward), str(done)
+            response = stub.DiscreteGymStep(cherry_rl_pb2.CallRequest(actor_id=actor_id, obs=obs, reward=reward, done=done, request_type="step"))
             if done:
                 break
 

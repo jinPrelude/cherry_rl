@@ -40,10 +40,8 @@ class WaitingBatch:
         return len(self.dict)
 
     def store(self, actor_id, obs):
-        if actor_id not in self.dict.keys():
-            self.dict[actor_id] = obs
-        else:
-            raise AssertionError(f"Try to overwrite existing key: self.dict[{actor_id}][{key}]")
+        assert actor_id not in self.dict.keys(), f"Try to overwrite existing key: self.dict[{actor_id}], keys: {self.dict.keys()}, time: {time.time()}"
+        self.dict[actor_id] = obs
 
     def delete_by_id(self, actor_id):
         del self.dict[actor_id]
@@ -62,6 +60,7 @@ class ProcessedBatch:
         self.lst = {}
     
     def store(self, actor_id, obs, action):
+        assert actor_id not in self.lst.keys(), f"[Processed] Try to overwrite existing key: self.dict[{actor_id}], keys: {self.lst.keys()}"
         self.lst[actor_id] = (obs, action)
     
     def get_by_id(self, actor_id):
