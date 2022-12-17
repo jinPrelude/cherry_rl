@@ -41,6 +41,16 @@ class CherryRLServicer(cherry_rl_pb2_grpc.CherryRLServicer):
 
             else:
                 time.sleep(0.0000000001)
+    
+    def train_thread(self):
+        """Running in background and if len(self.replay_buffer) > self.start_batch_size, run self.Agent.train"""
+        # hold on... ppo doesn't need replay buffer!
+        while True:
+            if len(self.replay_buffer) > self.start_batch_size:
+                minibatch = self.replay_buffer.sample(self.start_batch_size)
+                self.Agent.train(minibatch)
+            else:
+                time.sleep(0.0000000001)
 
     # def train_thread(self):
     #     """Running in background and if len(self.replay_buffer) > self.start_batch_size, run self.Agent.train"""

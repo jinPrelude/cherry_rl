@@ -7,5 +7,5 @@ class Agent(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def train(self, transitions):
+    def train(self, minibatch):
         pass
