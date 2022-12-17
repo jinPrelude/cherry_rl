@@ -1,5 +1,6 @@
 from abc import *
 
+
 class Agent(metaclass=ABCMeta):
     @abstractmethod
     def forward(self, obs):
@@ -8,4 +9,3 @@ class Agent(metaclass=ABCMeta):
     @abstractmethod
     def train(self, transitions):
         pass
-
