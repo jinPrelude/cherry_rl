@@ -16,11 +16,11 @@ import cherry_rl_pb2_grpc
 
 import numpy as np
 
-class CherryRLServicer(cherry_rl_pb2_grpc.CherryRLServicer):
 
+class CherryRLServicer(cherry_rl_pb2_grpc.CherryRLServicer):
     def __init__(self, agent: Agent, waiting_batch_size: int = 2):
         self.Agent = agent
-        self.waiting_batch = WaitingBatch(waiting_batch_size = waiting_batch_size)
+        self.waiting_batch = WaitingBatch(waiting_batch_size=waiting_batch_size)
         self.processed_batch = ProcessedBatch()
         self.replay_buffer = ReplayBuffer()
         batching_thread = threading.Thread(target=self.batching_thread)
@@ -58,21 +58,25 @@ class CherryRLServicer(cherry_rl_pb2_grpc.CherryRLServicer):
             obs = next_obs
         # store obs and actor_id in the waiting_batch
         if done:
-            return cherry_rl_pb2.DiscreteGymReply(action = -1)
-        else:           
+            return cherry_rl_pb2.DiscreteGymReply(action=-1)
+        else:
             self.waiting_batch.store(request.actor_id, obs)
-            while not self.processed_batch.is_id_exist(request.actor_id): time.sleep(0.0000000001)
+            while not self.processed_batch.is_id_exist(request.actor_id):
+                time.sleep(0.0000000001)
             _, action = self.processed_batch.get_by_id(request.actor_id)
-            return cherry_rl_pb2.DiscreteGymReply(action = str(action))
+            return cherry_rl_pb2.DiscreteGymReply(action=str(action))
+
 
 def run_learner(agent: Agent):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=65))
     cherry_rl_pb2_grpc.add_CherryRLServicer_to_server(
-        CherryRLServicer(agent=agent), server)
-    server.add_insecure_port('[::]:50051')
+        CherryRLServicer(agent=agent), server
+    )
+    server.add_insecure_port("[::]:50051")
     server.start()
     server.wait_for_termination()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     agent = DummyDiscreteAgent(0, 1)
     run_learner(agent)
