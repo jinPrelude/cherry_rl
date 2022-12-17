@@ -9,6 +9,7 @@ import cherry_rl_pb2_grpc
 
 import gym
 import numpy as np
+# from envs.test_env import *
 
 
 def actor_loop(stub, env, actor_id):
@@ -44,13 +45,11 @@ def actor_loop(stub, env, actor_id):
                 break
 
 
-def run_actor(actor_id: int):
+def run_actor(actor_id: int, env: gym.Env):
     assert actor_id >= 1, "actor_id should started from 1."
 
     channel = grpc.insecure_channel("localhost:50051")
     stub = cherry_rl_pb2_grpc.CherryRLStub(channel)
-
-    env = gym.make("CartPole-v1")
 
     actor_loop(stub, env, actor_id)
 
@@ -58,5 +57,13 @@ def run_actor(actor_id: int):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--id", type=int)
+    parser.add_argument("--env-name", type=str)
     args = parser.parse_args()
-    run_actor(args.id)
+
+    # if args.env_name == "TestDiscreteVectorEnv":
+    #     env = TestDiscreteVectorEnv()
+    # else:
+    #     env = gym.make(args.env_name)
+    env = gym.make(args.env_name)
+
+    run_actor(args.id, env)

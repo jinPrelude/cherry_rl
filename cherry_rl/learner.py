@@ -18,11 +18,14 @@ import numpy as np
 
 
 class CherryRLServicer(cherry_rl_pb2_grpc.CherryRLServicer):
-    def __init__(self, agent: Agent, waiting_batch_size: int = 2):
+    def __init__(
+        self, agent: Agent, waiting_batch_size: int, start_training_batch_size: int
+    ):
         self.Agent = agent
         self.waiting_batch = WaitingBatch(waiting_batch_size=waiting_batch_size)
         self.processed_batch = ProcessedBatch()
         self.replay_buffer = ReplayBuffer()
+        self.start_training_batch_size = start_training_batch_size
         batching_thread = threading.Thread(target=self.batching_thread)
         batching_thread.daemon = True
         batching_thread.start()
@@ -38,6 +41,16 @@ class CherryRLServicer(cherry_rl_pb2_grpc.CherryRLServicer):
 
             else:
                 time.sleep(0.0000000001)
+
+    # def train_thread(self):
+    #     """Running in background and if len(self.replay_buffer) > self.start_batch_size, run self.Agent.train"""
+    #     # TODO: hold on... ppo doesn't need replay buffer!
+    #     while True:
+    #         if len(self.replay_buffer) > self.start_batch_size:
+    #             minibatch = self.replay_buffer.sample(self.start_batch_size)
+    #             self.Agent.train(minibatch)
+    #         else:
+    #             time.sleep(0.0000000001)
 
     def DiscreteGymStep(self, request, context):
         done = False
@@ -67,10 +80,10 @@ class CherryRLServicer(cherry_rl_pb2_grpc.CherryRLServicer):
             return cherry_rl_pb2.DiscreteGymReply(action=str(action))
 
 
-def run_learner(agent: Agent):
+def run_learner(agent: Agent, waiting_batch_size: int):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=65))
     cherry_rl_pb2_grpc.add_CherryRLServicer_to_server(
-        CherryRLServicer(agent=agent), server
+        CherryRLServicer(agent=agent, waiting_batch_size=waiting_batch_size), server
     )
     server.add_insecure_port("[::]:50051")
     server.start()
