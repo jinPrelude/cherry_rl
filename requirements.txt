@@ -1,0 +1,8 @@
+# cuda version : 11.7
+grpcio==1.51.1
+grpcio-tools==1.51.1
+gym==0.26.2
+numpy==1.23.5
+torch==1.13.1
+
+black==22.12.0
